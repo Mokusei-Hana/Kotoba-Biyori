@@ -6,6 +6,7 @@ export type AppRoute =
   | 'flashcards'
   | 'grammar'
   | 'dictionary'
+  | 'pitch'
   | 'conjugation'
   | 'mistakes'
   | 'kana'
@@ -16,6 +17,7 @@ const VALID_ROUTES: AppRoute[] = [
   'flashcards',
   'grammar',
   'dictionary',
+  'pitch',
   'conjugation',
   'mistakes',
   'kana',

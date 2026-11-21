@@ -10,6 +10,7 @@ import { FlashcardsPage } from '@/features/flashcards/FlashcardsPage'
 import { GrammarPage } from '@/features/grammar/GrammarPage'
 import { KanaPage } from '@/features/kana/KanaPage'
 import { MistakesPage } from '@/features/mistakes/MistakesPage'
+import { PitchDictionaryPage } from '@/features/pitch/PitchDictionaryPage'
 import { useHashRoute } from '@/hooks/useHashRoute'
 
 function AppContent() {
@@ -35,6 +36,8 @@ function AppContent() {
         <GrammarPage />
       ) : route === 'dictionary' ? (
         <DictionaryPage initialQuery={param} navigate={navigate} />
+      ) : route === 'pitch' ? (
+        <PitchDictionaryPage initialQuery={param} navigate={navigate} />
       ) : route === 'conjugation' ? (
         <ConjugationPage initialVerb={param} navigate={navigate} />
       ) : route === 'mistakes' ? (

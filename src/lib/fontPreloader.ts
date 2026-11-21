@@ -2,18 +2,24 @@ import { DIALOGUE_SCENARIOS } from '@/data/dialogues'
 import { GRAMMAR_PATTERNS } from '@/data/grammar'
 import { BASIC_KANA_ROWS, DAKUTEN_KANA_ROWS, YOON_KANA_ROWS } from '@/data/kana'
 import { TOPICS } from '@/data/topics'
+import { VERIFIED_PITCH_ENTRIES } from '@/data/verifiedPitchDict'
 import { BUILTIN_VOCAB } from '@/data/vocabulary'
 import type { VocabItem } from '@/types/learning'
 
 const UI_COMMON_TEXT =
-  'ことば日和日常日语口语手账今日学习场景对话口语闪卡实用句型五十音速查' +
+  'ことば日和日常日语口语手账今日学习场景对话口语闪卡实用句型智能词典音调词典动词活用错词本五十音速查' +
   'おはようございますこんにちはこんばんは连续打卡天今日目标已达成学习活力' +
   '推荐下一课进入对话跟读待复习词开始间隔记忆浏览句型卡片薄弱词句回顾' +
   '振假名中文译文角色掩盖整段连读停止连读核心表达日本聊天小贴士' +
   '闪卡记忆词表浏览今日待复习全部生词收藏添加自定义词句不认识有点模糊记住了' +
-  '礼貌体朋友简体对照清音浊音半浊音拗音罗马音设置备份'
+  '礼貌体朋友简体对照清音浊音半浊音拗音罗马音设置备份' +
+  '标准东京音调类型数字高低音曲线平板型头高型中高型尾高型经典同音异调对比朗读慢速带助词'
 
 const FONT_SPECS = [
+  '400 16px "Noto Sans SC"',
+  '500 16px "Noto Sans SC"',
+  '600 16px "Noto Sans SC"',
+  '700 16px "Noto Sans SC"',
   '400 16px "Noto Sans JP"',
   '500 16px "Noto Sans JP"',
   '600 16px "Noto Sans JP"',
@@ -65,6 +71,10 @@ function getBaseCorpus(): string {
     for (const cell of row.cells) {
       if (cell) parts.push(cell.hiragana, cell.katakana)
     }
+  }
+
+  for (const p of VERIFIED_PITCH_ENTRIES) {
+    parts.push(p.kanji, p.kana, p.zh, p.note ?? '')
   }
 
   baseCorpusCache = Array.from(new Set(parts.join(''))).join('')

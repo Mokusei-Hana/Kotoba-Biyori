@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
+  AudioWaveform,
   BookA,
   Bookmark,
   CheckCircle2,
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FuriganaText } from '@/components/common/FuriganaText'
+import { PitchAccentChart } from '@/components/common/PitchAccentChart'
 import { SpeechButton } from '@/components/common/SpeechButton'
 import { EmptyState } from '@/components/common/StateViews'
 import { useLearning } from '@/context/LearningContext'
@@ -28,6 +30,10 @@ import {
   type OnlineDictionaryResult,
   type OnlineDictionaryWord,
 } from '@/services/dictionary/dictionaryService'
+import {
+  extractVerifiedPitchPatterns,
+  findLocalVerifiedPitchForWord,
+} from '@/services/pitch/pitchService'
 import { cn, getTodayKey } from '@/lib/utils'
 
 const QUICK_SEARCH_EXAMPLES = [
@@ -205,15 +211,30 @@ export function DictionaryPage({ initialQuery, navigate }: DictionaryPageProps) 
         </div>
 
         {navigate && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 shrink-0"
-            onClick={() => navigate('conjugation', query.trim() ? encodeURIComponent(query.trim()) : undefined)}
-          >
-            <Languages className="size-4 text-primary" />
-            动词活用查询器
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() =>
+                navigate('pitch', query.trim() ? encodeURIComponent(query.trim()) : undefined)
+              }
+            >
+              <AudioWaveform className="size-4 text-primary" />
+              音调词典
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() =>
+                navigate('conjugation', query.trim() ? encodeURIComponent(query.trim()) : undefined)
+              }
+            >
+              <Languages className="size-4 text-primary" />
+              动词活用查询器
+            </Button>
+          </div>
         )}
       </div>
 
@@ -291,6 +312,7 @@ export function DictionaryPage({ initialQuery, navigate }: DictionaryPageProps) 
                   const rec = state.srsRecords[item.id]
                   const isDue = !rec || rec.nextReviewDate <= today
                   const subLabel = getSubtopicLabel(item.topic, item.subtopic)
+                  const verifiedPitch = findLocalVerifiedPitchForWord(item.plainJa, item.reading)
 
                   return (
                     <Card key={item.id} className="p-4 flex flex-col justify-between gap-3">
@@ -326,6 +348,20 @@ export function DictionaryPage({ initialQuery, navigate }: DictionaryPageProps) 
                             {item.reading}
                             {item.romaji ? ` · ${item.romaji}` : ''}
                           </p>
+                          {verifiedPitch && (
+                            <div className="pt-1 flex flex-wrap items-center gap-2">
+                              <PitchAccentChart pattern={verifiedPitch} size="sm" />
+                              {navigate && (
+                                <button
+                                  type="button"
+                                  onClick={() => navigate('pitch', encodeURIComponent(item.plainJa))}
+                                  className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                                >
+                                  音调曲线 →
+                                </button>
+                              )}
+                            </div>
+                          )}
                           <p className="text-sm text-foreground">{item.zh}</p>
                         </div>
 
@@ -429,11 +465,13 @@ export function DictionaryPage({ initialQuery, navigate }: DictionaryPageProps) 
                   const existing = findExistingVocab(word)
                   const isBookmarked = existing ? state.bookmarkedVocab.includes(existing.id) : false
                   const inSrs = Boolean(existing)
+                  const pitchPatterns = extractVerifiedPitchPatterns(word)
+                  const primaryPitch = pitchPatterns[0] ?? null
 
                   return (
                     <Card key={word.id} className="p-4 sm:p-5 space-y-3">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-display text-xl font-bold">
                               <FuriganaText
@@ -455,29 +493,26 @@ export function DictionaryPage({ initialQuery, navigate }: DictionaryPageProps) 
                           </div>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <span>读音：{word.kana}</span>
-                            {word.pitch && word.pitch.length > 0 && (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[11px]">
-                                音调：
-                                {word.pitch.map((p, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={cn(
-                                      p.high
-                                        ? 'border-t border-primary text-foreground font-medium'
-                                        : 'text-muted-foreground',
-                                    )}
-                                  >
-                                    {p.part}
-                                  </span>
-                                ))}
-                              </span>
+                            {primaryPitch && (
+                              <PitchAccentChart pattern={primaryPitch} size="sm" />
                             )}
                           </div>
                         </div>
 
-                        {/* Actions: Audio, Conjugation (if verb), Bookmark, Add to SRS */}
+                        {/* Actions: Audio, Pitch, Conjugation (if verb), Bookmark, Add to SRS */}
                         <div className="flex flex-wrap items-center gap-1.5">
                           <SpeechButton id={`dict-on-${word.id}`} text={word.kanji} />
+                          {navigate && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1 text-xs"
+                              onClick={() => navigate('pitch', encodeURIComponent(word.kanji))}
+                            >
+                              <AudioWaveform className="size-3.5 text-primary" />
+                              {primaryPitch ? '音调曲线' : '查音调'}
+                            </Button>
+                          )}
                           {word.verbClass && navigate && (
                             <Button
                               size="sm"

@@ -7,6 +7,8 @@ export interface WiktionaryZhEntry {
   title: string
   definitions: string[]
   examples: WiktionaryZhExample[]
+  /** 来自中文维基词典 {{ja-pron}} 渲染的标准东京音调数字（如 [0], [2]），无则为空数组 */
+  pitchAccents: number[]
   sourceName: '中文维基词典 (Wiktionary)'
   sourceUrl: string
   license: 'CC BY-SA 4.0'
@@ -68,8 +70,27 @@ function parseWiktionaryZhHtml(title: string, html: string): WiktionaryZhEntry |
 
   const definitions: string[] = []
   const examples: WiktionaryZhExample[] = []
+  const pitchAccents: number[] = []
   const seenDefs = new Set<string>()
   const seenEx = new Set<string>()
+  const seenAccents = new Set<number>()
+
+  // Extract verified Tokyo pitch accent numbers rendered by {{ja-pron}},
+  // e.g. "(东京) さくら [sàkúrá] (平板型 – [0])" or "(東京) はし (尾高型 - [2])"
+  const tokyoPitchRegex = /(?:东|東)京[\s\S]{0,120}?(?:平板型|头高型|頭高型|中高型|尾高型|Heiban|Atamadaka|Nakadaka|Odaka)\s*[–—-]\s*\[(\d+)\]/g
+  for (const node of jaNodes) {
+    const text = cleanText(node.textContent ?? '')
+    if (!text) continue
+    let match: RegExpExecArray | null
+    tokyoPitchRegex.lastIndex = 0
+    while ((match = tokyoPitchRegex.exec(text)) !== null) {
+      const num = Number(match[1])
+      if (Number.isInteger(num) && num >= 0 && num <= 20 && !seenAccents.has(num)) {
+        seenAccents.add(num)
+        pitchAccents.push(num)
+      }
+    }
+  }
 
   for (const node of jaNodes) {
     const ols = node.tagName === 'OL' ? [node] : Array.from(node.querySelectorAll('ol'))
@@ -118,12 +139,13 @@ function parseWiktionaryZhHtml(title: string, html: string): WiktionaryZhEntry |
     }
   }
 
-  if (definitions.length === 0) return null
+  if (definitions.length === 0 && pitchAccents.length === 0) return null
 
   return {
     title,
     definitions: definitions.slice(0, 6),
     examples: examples.slice(0, 4),
+    pitchAccents,
     sourceName: '中文维基词典 (Wiktionary)',
     sourceUrl: `https://zh.wiktionary.org/wiki/${encodeURIComponent(title)}`,
     license: 'CC BY-SA 4.0',

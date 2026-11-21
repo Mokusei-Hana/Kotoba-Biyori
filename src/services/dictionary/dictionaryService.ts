@@ -26,6 +26,8 @@ export interface OnlineDictionaryWord {
   /** 优先展示的中文释义（来自中文维基词典 CC BY-SA 4.0） */
   zhDefinitions: string[]
   zhExamples: WiktionaryZhExample[]
+  /** 来自中文维基词典的标准东京音调数字补充 */
+  zhPitchAccents?: number[]
   zhSourceUrl?: string
   zhLicense?: 'CC BY-SA 4.0'
   /** EDRDG JMdict 结构化义项与词性 */
@@ -258,6 +260,9 @@ export async function searchOnlineDictionary(
       if (zhEntry) {
         w.zhDefinitions = zhEntry.definitions
         w.zhExamples = zhEntry.examples
+        if (zhEntry.pitchAccents.length > 0) {
+          w.zhPitchAccents = zhEntry.pitchAccents
+        }
         w.zhSourceUrl = zhEntry.sourceUrl
         w.zhLicense = zhEntry.license
       }

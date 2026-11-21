@@ -9,7 +9,7 @@ interface FuriganaTextProps {
 
 export function FuriganaText({ segments, showFurigana, className }: FuriganaTextProps) {
   return (
-    <span className={cn('leading-loose', className)}>
+    <span lang="ja" className={cn('leading-loose', className)}>
       {segments.map((seg, idx) =>
         seg.reading && showFurigana ? (
           <ruby key={idx}>

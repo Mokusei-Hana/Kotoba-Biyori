@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
+  AudioWaveform,
   BookA,
   BookOpenText,
   ChevronDown,
@@ -56,6 +57,14 @@ const TOOL_ROUTES: {
     description: '集中攻克不认识与模糊词',
     icon: AlertTriangle,
     iconClassName: 'text-warning',
+  },
+  {
+    id: 'pitch',
+    label: '音调词典',
+    shortLabel: '音调词典',
+    description: '标准东京音调数字与高低曲线',
+    icon: AudioWaveform,
+    iconClassName: 'text-primary',
   },
   {
     id: 'conjugation',
@@ -125,7 +134,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
               <Flower2 className="size-4.5" />
             </span>
             <div className="leading-tight">
-              <span className="font-display text-[15px] font-bold tracking-wide text-foreground whitespace-nowrap">
+              <span lang="ja" className="font-ja-display text-[15px] font-bold tracking-wide text-foreground whitespace-nowrap">
                 ことば日和
               </span>
               <span className="hidden xl:block text-[10px] text-muted-foreground whitespace-nowrap">
@@ -194,7 +203,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
                 <div
                   role="menu"
                   aria-label="学习工具菜单"
-                  className="absolute right-0 mt-2 w-60 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg z-50"
+                  className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg z-50"
                 >
                   <div className="px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground">
                     学习工具
