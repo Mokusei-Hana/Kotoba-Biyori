@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Noto Sans JP", "Hiragino Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Zen Maru Gothic", "Noto Sans JP", "PingFang SC", system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+:root {
+  /* 淡樱雾粉 × 素白 (Sakura Mist × Crisp White) */
+  --background: #ffffff;
+  --foreground: #262225;
+
+  --card: #fdfbfc;
+  --card-foreground: #262225;
+
+  --popover: #ffffff;
+  --popover-foreground: #262225;
+
+  --primary: #c96f80;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f9eff1;
+  --secondary-foreground: #7a3e4b;
+
+  --muted: #f6f2f3;
+  --muted-foreground: #6f666c;
+
+  --accent: #f7eaed;
+  --accent-foreground: #8f4756;
+
+  --destructive: #c8525c;
+  --destructive-foreground: #ffffff;
+
+  --success: #4d8a6e;
+  --success-foreground: #ffffff;
+
+  --warning: #c58847;
+  --warning-foreground: #ffffff;
+
+  --border: #efe8ea;
+  --input: #e7dde0;
+  --ring: #c96f80;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* 夜樱深灰 (Night Sakura Charcoal) */
+  --background: #161416;
+  --foreground: #f4eef0;
+
+  --card: #1f1b1e;
+  --card-foreground: #f4eef0;
+
+  --popover: #241f22;
+  --popover-foreground: #f4eef0;
+
+  --primary: #df8a9b;
+  --primary-foreground: #1b1517;
+
+  --secondary: #312328;
+  --secondary-foreground: #f3c9d1;
+
+  --muted: #272225;
+  --muted-foreground: #a5999f;
+
+  --accent: #33252a;
+  --accent-foreground: #f3c9d1;
+
+  --destructive: #e06d76;
+  --destructive-foreground: #1b1517;
+
+  --success: #6db392;
+  --success-foreground: #121c17;
+
+  --warning: #dfa76b;
+  --warning-foreground: #1f1912;
+
+  --border: #2f292c;
+  --input: #393135;
+  --ring: #df8a9b;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "palt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Furigana (ruby) refined Japanese typography */
+ruby {
+  ruby-position: over;
+  ruby-align: center;
+}
+
+rt {
+  font-size: 0.56em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+  user-select: none;
+  line-height: 1.1;
+}
+
+/* Subtle Japanese paper-grain radial aura for hero areas */
+.sakura-soft-glow {
+  background-image: radial-gradient(
+    600px circle at 85% 10%,
+    color-mix(in srgb, var(--primary) 7%, transparent),
+    transparent 65%
+  );
+}
+
+/* Smooth flashcard flip helper */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
