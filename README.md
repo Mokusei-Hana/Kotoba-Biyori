@@ -5,6 +5,33 @@
 
 ---
 
+## 界面预览
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/screenshots/dashboard.png" alt="首页与学习统计" /><br />
+      <sub><b>今日学习首页 · 打卡活力与学习统计</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/screenshots/dialogues.png" alt="场景对话演练" /><br />
+      <sub><b>场景对话演练 · 地下偶像特典会（振假名 / 跟读）</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/screenshots/flashcards.png" alt="口语词汇闪卡" /><br />
+      <sub><b>口语词汇闪卡 · 地下偶像・推活与 7 个子主题</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/screenshots/dictionary.png" alt="日语智能词典" /><br />
+      <sub><b>日语智能词典 · 本地核验词库 + JMdict / Tatoeba</b></sub>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## 核心功能
 
 ### 1. 场景对话演练（11 篇完整双人对话）
