@@ -80,6 +80,7 @@ export interface VocabItem {
   reading: string
   romaji: string
   zh: string
+  partOfSpeech?: string[]
   register: '礼貌' | '简体' | '通用'
   usageScope?: '圈内特有' | '现场特化' | '演出通用'
   exampleJa?: string

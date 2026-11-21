@@ -1,8 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 
-export type AppRoute = 'dashboard' | 'dialogues' | 'flashcards' | 'grammar' | 'kana'
+export type AppRoute =
+  | 'dashboard'
+  | 'dialogues'
+  | 'flashcards'
+  | 'grammar'
+  | 'dictionary'
+  | 'mistakes'
+  | 'kana'
 
-const VALID_ROUTES: AppRoute[] = ['dashboard', 'dialogues', 'flashcards', 'grammar', 'kana']
+const VALID_ROUTES: AppRoute[] = [
+  'dashboard',
+  'dialogues',
+  'flashcards',
+  'grammar',
+  'dictionary',
+  'mistakes',
+  'kana',
+]
 
 function parseHash(): { route: AppRoute; param?: string } {
   const raw = window.location.hash.replace(/^#\/?/, '')

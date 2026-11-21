@@ -48,6 +48,20 @@ interface LearningContextValue {
     exampleZh: string
     register: '礼貌' | '简体' | '通用'
   }) => Promise<void>
+  saveDictionaryVocab: (
+    input: {
+      plainJa: string
+      reading: string
+      segments: VocabItem['segments']
+      zh: string
+      partOfSpeech?: string[]
+      exampleJa?: string
+      exampleZh?: string
+      sourceUrl?: string
+      license?: string
+    },
+    options?: { bookmark?: boolean; addToSrs?: boolean },
+  ) => Promise<string>
   deleteCustomVocab: (id: string) => Promise<void>
   exportBackup: () => Promise<string>
   importBackup: (rawJson: string) => Promise<void>
@@ -265,6 +279,80 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     [showToast],
   )
 
+  const saveDictionaryVocab = useCallback(
+    async (
+      input: {
+        plainJa: string
+        reading: string
+        segments: VocabItem['segments']
+        zh: string
+        partOfSpeech?: string[]
+        exampleJa?: string
+        exampleZh?: string
+        sourceUrl?: string
+        license?: string
+      },
+      options?: { bookmark?: boolean; addToSrs?: boolean },
+    ) => {
+      const existing = allVocab.find(
+        (v) => v.plainJa === input.plainJa.trim() && v.reading === input.reading.trim(),
+      )
+      let targetId = existing?.id
+      let latestState = state
+
+      if (!targetId) {
+        const newItem: VocabItem = {
+          id: `dict-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          topic: 'custom',
+          segments: input.segments,
+          plainJa: input.plainJa.trim(),
+          reading: input.reading.trim() || input.plainJa.trim(),
+          romaji: '',
+          zh: input.zh.trim(),
+          partOfSpeech: input.partOfSpeech,
+          register: '通用',
+          exampleJa: input.exampleJa?.trim() || undefined,
+          exampleZh: input.exampleZh?.trim() || undefined,
+          sourceUrl: input.sourceUrl,
+          license: input.license,
+          isCustom: true,
+        }
+        targetId = newItem.id
+        latestState = await learningRepository.addCustomVocab(newItem)
+        void preloadFontChars(
+          `${newItem.plainJa}${newItem.reading}${newItem.zh}${newItem.exampleJa ?? ''}`,
+        )
+      }
+
+      if (options?.bookmark && !latestState.bookmarkedVocab.includes(targetId)) {
+        latestState = await learningRepository.toggleVocabBookmark(targetId)
+      }
+
+      if (options?.addToSrs) {
+        const existingRec = latestState.srsRecords[targetId]
+        const today = getTodayKey()
+        if (existingRec && existingRec.nextReviewDate > today) {
+          latestState = await learningRepository.upsertSrsRecord({
+            ...existingRec,
+            nextReviewDate: today,
+            updatedAt: new Date().toISOString(),
+          })
+        }
+      }
+
+      setState(latestState)
+      if (options?.bookmark && options?.addToSrs) {
+        showToast('已收藏并加入今日 SRS 复习队列', 'success')
+      } else if (options?.bookmark) {
+        showToast('已收藏该词条（同步至生词收藏）', 'success')
+      } else if (options?.addToSrs) {
+        showToast('已加入今日 SRS 闪卡队列', 'success')
+      }
+      return targetId
+    },
+    [allVocab, state, showToast],
+  )
+
   const deleteCustomVocab = useCallback(
     async (id: string) => {
       const next = await learningRepository.deleteCustomVocab(id)
@@ -342,6 +430,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     toggleVocabBookmark,
     rateVocab,
     addCustomVocab,
+    saveDictionaryVocab,
     deleteCustomVocab,
     exportBackup,
     importBackup,

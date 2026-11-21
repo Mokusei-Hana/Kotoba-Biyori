@@ -1,5 +1,7 @@
 import React from 'react'
 import {
+  AlertTriangle,
+  BookA,
   BookOpenText,
   Flower2,
   Grid2x2,
@@ -28,10 +30,11 @@ const PRIMARY_NAV: { id: AppRoute; label: string; icon: React.ComponentType<{ cl
   { id: 'dialogues', label: '场景对话', icon: MessageCircleHeart },
   { id: 'flashcards', label: '口语闪卡', icon: Layers },
   { id: 'grammar', label: '实用句型', icon: BookOpenText },
+  { id: 'dictionary', label: '智能词典', icon: BookA },
 ]
 
 export function AppShell({ route, navigate, children }: AppShellProps) {
-  const { state, updatePreferences, speechError, clearSpeechError, toast } = useLearning()
+  const { state, weakVocab, updatePreferences, speechError, clearSpeechError, toast } = useLearning()
   const isDark = state.preferences.theme === 'dark'
 
   const toggleTheme = () => {
@@ -41,29 +44,29 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Desktop & Mobile Top Header */}
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-background">
-        <div className="mx-auto flex h-15 max-w-5xl items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-xs">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-3 sm:px-6">
           {/* Brand */}
           <button
             type="button"
             onClick={() => navigate('dashboard')}
-            className="flex items-center gap-2.5 text-left cursor-pointer group"
+            className="flex shrink-0 items-center gap-2 text-left cursor-pointer group whitespace-nowrap"
           >
-            <span className="flex size-8 items-center justify-center rounded-xl bg-secondary text-primary transition-transform duration-200 group-hover:scale-105">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary transition-transform duration-200 group-hover:scale-105">
               <Flower2 className="size-4.5" />
             </span>
             <div className="leading-tight">
-              <span className="font-display text-base font-bold tracking-wide text-foreground">
+              <span className="font-display text-[15px] font-bold tracking-wide text-foreground whitespace-nowrap">
                 ことば日和
               </span>
-              <span className="hidden sm:block text-[11px] text-muted-foreground">
+              <span className="hidden xl:block text-[10px] text-muted-foreground whitespace-nowrap">
                 日常日语口语手账
               </span>
             </div>
           </button>
 
           {/* Desktop Primary Nav */}
-          <nav className="hidden md:flex items-center gap-1" aria-label="主导航">
+          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 min-w-0" aria-label="主导航">
             {PRIMARY_NAV.map((item) => {
               const Icon = item.icon
               const active = route === item.id
@@ -73,13 +76,13 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
                   type="button"
                   onClick={() => navigate(item.id)}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors cursor-pointer',
+                    'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 lg:px-3 py-1.5 text-[13px] lg:text-sm font-medium whitespace-nowrap transition-colors cursor-pointer',
                     active
                       ? 'bg-secondary text-secondary-foreground'
                       : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
                   )}
                 >
-                  <Icon className={cn('size-4', active && 'text-primary')} />
+                  <Icon className={cn('hidden lg:block size-3.5 shrink-0', active && 'text-primary')} />
                   <span>{item.label}</span>
                 </button>
               )
@@ -87,19 +90,40 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
           </nav>
 
           {/* Right Utility Controls */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
+            {/* Learning Tools: Mistakes & Kana */}
+            <Button
+              variant={route === 'mistakes' ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => navigate('mistakes')}
+              className="relative h-8 px-2 lg:px-2.5 gap-1.5 text-xs whitespace-nowrap shrink-0"
+              aria-label="错词本"
+              title="错词本（集中复习不认识与模糊词）"
+            >
+              <AlertTriangle className="size-3.5 shrink-0 text-warning" />
+              <span className="hidden lg:inline">错词本</span>
+              {weakVocab.length > 0 && (
+                <span className="rounded-full bg-warning/15 px-1.5 py-0 text-[10px] font-semibold leading-4 text-warning">
+                  {weakVocab.length}
+                </span>
+              )}
+            </Button>
+
             <Button
               variant={route === 'kana' ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => navigate('kana')}
-              className="gap-1.5 text-xs"
+              className="h-8 px-2 lg:px-2.5 gap-1.5 text-xs whitespace-nowrap shrink-0"
+              aria-label="五十音速查"
               title="五十音轻量速查表"
             >
-              <Grid2x2 className="size-3.5 text-primary" />
-              <span className="hidden sm:inline">五十音速查</span>
-              <span className="sm:hidden">五十音</span>
+              <Grid2x2 className="size-3.5 shrink-0 text-primary" />
+              <span className="hidden lg:inline">五十音</span>
             </Button>
 
+            <span className="hidden sm:block mx-0.5 h-4 w-px bg-border/80" aria-hidden="true" />
+
+            {/* System Controls */}
             <Button
               variant="ghost"
               size="icon-sm"
@@ -137,7 +161,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
         aria-label="移动端导航"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background md:hidden"
       >
-        <div className="grid grid-cols-4 h-16 px-2">
+        <div className="grid grid-cols-5 h-16 px-1">
           {PRIMARY_NAV.map((item) => {
             const Icon = item.icon
             const active = route === item.id
@@ -147,7 +171,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
                 type="button"
                 onClick={() => navigate(item.id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors cursor-pointer',
+                  'flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium whitespace-nowrap transition-colors cursor-pointer',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >

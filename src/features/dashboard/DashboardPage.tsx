@@ -228,8 +228,8 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
             </p>
           </div>
           {weakVocab.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => navigate('flashcards')}>
-              去闪卡复习
+            <Button variant="ghost" size="sm" onClick={() => navigate('mistakes')}>
+              进入错词本集中复习
               <ArrowRight className="size-3.5" />
             </Button>
           )}
