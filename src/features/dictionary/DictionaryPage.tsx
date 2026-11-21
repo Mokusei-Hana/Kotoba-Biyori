@@ -5,6 +5,7 @@ import {
   Bookmark,
   CheckCircle2,
   Globe,
+  Languages,
   Layers,
   Loader2,
   PlusCircle,
@@ -21,6 +22,7 @@ import { SpeechButton } from '@/components/common/SpeechButton'
 import { EmptyState } from '@/components/common/StateViews'
 import { useLearning } from '@/context/LearningContext'
 import { getSubtopicLabel, TOPIC_MAP } from '@/data/topics'
+import type { AppRoute } from '@/hooks/useHashRoute'
 import {
   searchOnlineDictionary,
   type OnlineDictionaryResult,
@@ -39,7 +41,12 @@ const QUICK_SEARCH_EXAMPLES = [
   '握手会',
 ]
 
-export function DictionaryPage() {
+interface DictionaryPageProps {
+  initialQuery?: string
+  navigate?: (route: AppRoute, param?: string) => void
+}
+
+export function DictionaryPage({ initialQuery, navigate }: DictionaryPageProps) {
   const {
     state,
     allVocab,
@@ -47,8 +54,15 @@ export function DictionaryPage() {
     saveDictionaryVocab,
   } = useLearning()
 
-  const [query, setQuery] = useState('')
+  const decodedInitial = initialQuery ? decodeURIComponent(initialQuery) : ''
+  const [query, setQuery] = useState(decodedInitial)
   const [submittedQuery, setSubmittedQuery] = useState('')
+
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(decodeURIComponent(initialQuery))
+    }
+  }, [initialQuery])
   const [onlineResult, setOnlineResult] = useState<OnlineDictionaryResult>({
     words: [],
     sentences: [],
@@ -140,13 +154,19 @@ export function DictionaryPage() {
     options: { bookmark?: boolean; addToSrs?: boolean },
   ) => {
     const allPos = Array.from(new Set(word.senses.flatMap((s) => s.pos)))
-    const glossSummary = word.senses
-      .slice(0, 2)
-      .map((s) => s.glosses.slice(0, 3).join(' / '))
-      .join('；')
+    const existing = findExistingVocab(word)
+    const zhSummary =
+      word.zhDefinitions.length > 0
+        ? word.zhDefinitions.slice(0, 3).join('；')
+        : existing?.zh ||
+          word.senses
+            .slice(0, 2)
+            .map((s) => s.glosses.slice(0, 3).join(' / '))
+            .join('；')
 
-    // Attach a matching real Tatoeba sentence if one contains this word
-    const matchingSentence = onlineResult.sentences.find(
+    // Prefer real Japanese-Chinese example from Wiktionary; otherwise real Tatoeba sentence
+    const wiktEx = word.zhExamples[0]
+    const matchingTatoeba = onlineResult.sentences.find(
       (s) => s.content.includes(word.kanji) || (word.kana && s.content.includes(word.kana)),
     )
 
@@ -155,12 +175,14 @@ export function DictionaryPage() {
         plainJa: word.kanji,
         reading: word.kana || word.kanji,
         segments: word.segments,
-        zh: glossSummary,
+        zh: zhSummary,
         partOfSpeech: allPos,
-        exampleJa: matchingSentence?.content,
-        exampleZh: matchingSentence?.translation,
-        sourceUrl: word.sourceUrl,
-        license: `${word.sourceName} (${word.license})`,
+        exampleJa: wiktEx?.ja ?? matchingTatoeba?.content,
+        exampleZh: wiktEx?.zh ?? matchingTatoeba?.translation,
+        sourceUrl: word.zhSourceUrl ?? word.sourceUrl,
+        license: word.zhSourceUrl
+          ? '中文维基词典 (CC BY-SA 4.0) / EDRDG JMdict (CC BY-SA 4.0)'
+          : `${word.sourceName} (${word.license})`,
       },
       options,
     )
@@ -171,14 +193,28 @@ export function DictionaryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
-          <BookA className="size-6 text-primary" />
-          日语智能词典
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          支持日语汉字、假名、罗马音与中文检索；本地已核验词库实时匹配，联动 JMdict 与 Tatoeba 真实词条与例句，一键收藏或加入 SRS 复习。
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
+            <BookA className="size-6 text-primary" />
+            日语智能词典
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            支持日语、假名、罗马音与中文查词，查看读音、词性、中文释义与真实例句，随时收藏或加入闪卡复习。
+          </p>
+        </div>
+
+        {navigate && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 shrink-0"
+            onClick={() => navigate('conjugation', query.trim() ? encodeURIComponent(query.trim()) : undefined)}
+          >
+            <Languages className="size-4 text-primary" />
+            动词活用查询器
+          </Button>
+        )}
       </div>
 
       {/* Search Form */}
@@ -229,7 +265,7 @@ export function DictionaryPage() {
         <EmptyState
           icon={<Sparkles className="size-5" />}
           title="输入任意词句开始查询"
-          description="本地已核验词库支持中/日/假名/罗马音秒查；在线词典实时对接真实 JMdict 词条与 Tatoeba 语料例句，所有收藏与 SRS 记录自动同步至账号。"
+          description="输入日语、假名或中文即可查词；查到的生词可以一键收藏或加入闪卡复习，学习记录自动同步。"
         />
       ) : (
         <div className="space-y-6">
@@ -324,11 +360,11 @@ export function DictionaryPage() {
                         <span>
                           {rec
                             ? rec.lastRating === 'good' && rec.repetitions >= 2
-                              ? 'SRS：已熟练'
+                              ? '复习状态：已熟练'
                               : isDue
-                                ? 'SRS：今日待复习'
-                                : `SRS：下次复习 ${rec.nextReviewDate}`
-                            : 'SRS：已在待复习队列中'}
+                                ? '复习状态：今日待复习'
+                                : `下次复习：${rec.nextReviewDate}`
+                            : '复习状态：待复习'}
                         </span>
                         {!isDue && (
                           <Button
@@ -358,25 +394,25 @@ export function DictionaryPage() {
             )}
           </section>
 
-          {/* Section 2: Online Real Dictionary (JMdict via Jotoba) */}
+          {/* Section 2: Online Real Dictionary (Wiktionary ZH + JMdict) */}
           <section className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-base font-bold flex items-center gap-1.5">
                 <Globe className="size-4 text-primary" />
-                在线权威词典（EDRDG JMdict）
+                在线词典结果
                 {!isSearchingOnline && submittedQuery && (
                   <Badge variant="outline">{onlineResult.words.length}</Badge>
                 )}
               </h2>
               <span className="text-xs text-muted-foreground">
-                真实词典释义与词性 · 不含 AI 生成内容
+                优先展示中文释义，附真实词典例句
               </span>
             </div>
 
             {isSearchingOnline ? (
               <Card className="p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin text-primary" />
-                正在检索 JMdict 词典与 Tatoeba 真实语料...
+                正在查询词典与例句...
               </Card>
             ) : onlineError ? (
               <Card className="p-4 border-warning/40 bg-warning/5 flex items-center gap-2 text-xs text-foreground">
@@ -385,7 +421,7 @@ export function DictionaryPage() {
               </Card>
             ) : onlineResult.words.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border bg-card/50 px-4 py-3 text-xs text-muted-foreground">
-                在线 JMdict 词典未返回「{submittedQuery || query.trim()}」的词条（在线词典主要支持日语汉字、假名、罗马音与英文检索；中文关键词优先使用上方本地已核验词库）。
+                在线词典暂未查到「{submittedQuery || query.trim()}」的词条（在线查询主要支持日语、假名、罗马音与英文，中文查词请参考上方内置词库）。
               </p>
             ) : (
               <div className="space-y-3">
@@ -413,7 +449,7 @@ export function DictionaryPage() {
                             {inSrs && (
                               <Badge variant="secondary" className="text-[10px] gap-1">
                                 <CheckCircle2 className="size-3" />
-                                已在词库 / SRS
+                                已加入词库
                               </Badge>
                             )}
                           </div>
@@ -439,9 +475,22 @@ export function DictionaryPage() {
                           </div>
                         </div>
 
-                        {/* Actions: Audio, Bookmark, Add to SRS */}
+                        {/* Actions: Audio, Conjugation (if verb), Bookmark, Add to SRS */}
                         <div className="flex flex-wrap items-center gap-1.5">
                           <SpeechButton id={`dict-on-${word.id}`} text={word.kanji} />
+                          {word.verbClass && navigate && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1 text-xs"
+                              onClick={() =>
+                                navigate('conjugation', encodeURIComponent(word.kanji))
+                              }
+                            >
+                              <Languages className="size-3.5 text-primary" />
+                              查看活用
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant={isBookmarked ? 'secondary' : 'outline'}
@@ -466,34 +515,119 @@ export function DictionaryPage() {
                             onClick={() => void handleSaveOnlineWord(word, { addToSrs: true })}
                           >
                             <PlusCircle className="size-3.5" />
-                            {inSrs ? '加入今日复习' : '加入 SRS'}
+                            {inSrs ? '今日复习' : '加入复习'}
                           </Button>
                         </div>
                       </div>
 
-                      {/* Real JMdict Senses & Parts of Speech */}
-                      <ol className="space-y-2 border-t border-border/70 pt-3 text-sm">
-                        {word.senses.slice(0, 4).map((sense, sIdx) => (
-                          <li key={sIdx} className="space-y-1">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="text-xs font-semibold text-primary">
-                                {sIdx + 1}.
-                              </span>
-                              {sense.pos.map((p) => (
-                                <Badge key={p} variant="muted" className="text-[10px] py-0">
-                                  {p}
-                                </Badge>
-                              ))}
-                              {sense.misc && (
-                                <Badge variant="outline" className="text-[10px] py-0">
-                                  {sense.misc}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-foreground/90 pl-4">{sense.glosses.join('; ')}</p>
-                          </li>
-                        ))}
-                      </ol>
+                      {/* Default Chinese Definitions (Wiktionary CC BY-SA 4.0 / Local Verified) */}
+                      {(() => {
+                        const allPos = Array.from(new Set(word.senses.flatMap((s) => s.pos)))
+                        const primaryZhDefs =
+                          word.zhDefinitions.length > 0
+                            ? word.zhDefinitions
+                            : existing?.zh
+                              ? [existing.zh]
+                              : []
+                        const zhSourceLabel =
+                          word.zhDefinitions.length > 0
+                            ? '中文维基词典'
+                            : existing?.zh
+                              ? '内置词库'
+                              : null
+
+                        return (
+                          <div className="space-y-3 border-t border-border/70 pt-3 text-sm">
+                            {allPos.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {allPos.slice(0, 4).map((p) => (
+                                  <Badge key={p} variant="muted" className="text-[10px] py-0">
+                                    {p}
+                                  </Badge>
+                                ))}
+                                {zhSourceLabel && (
+                                  <span className="text-[11px] text-muted-foreground ml-auto">
+                                    {zhSourceLabel}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {primaryZhDefs.length > 0 ? (
+                              <>
+                                <ol className="space-y-1.5">
+                                  {primaryZhDefs.slice(0, 5).map((def, dIdx) => (
+                                    <li key={dIdx} className="flex items-start gap-2">
+                                      <span className="text-xs font-semibold text-primary pt-0.5 shrink-0">
+                                        {dIdx + 1}.
+                                      </span>
+                                      <span className="text-foreground leading-relaxed">{def}</span>
+                                    </li>
+                                  ))}
+                                </ol>
+
+                                {/* Real Japanese-Chinese examples from Wiktionary */}
+                                {word.zhExamples.length > 0 && (
+                                  <div className="space-y-1.5 pt-1">
+                                    {word.zhExamples.slice(0, 2).map((ex, eIdx) => (
+                                      <div
+                                        key={eIdx}
+                                        className="rounded-lg bg-background border border-border/70 px-3 py-2 flex items-start justify-between gap-2 text-xs"
+                                      >
+                                        <div className="space-y-0.5 min-w-0">
+                                          <p className="font-medium text-foreground">{ex.ja}</p>
+                                          <p className="text-muted-foreground">{ex.zh}</p>
+                                        </div>
+                                        <SpeechButton
+                                          id={`dict-wikt-ex-${word.id}-${eIdx}`}
+                                          text={ex.ja}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Collapsible JMdict English reference */}
+                                <details className="pt-1 text-xs text-muted-foreground">
+                                  <summary className="cursor-pointer select-none hover:text-foreground">
+                                    查看英文对照释义
+                                  </summary>
+                                  <ol className="mt-2 space-y-1 pl-4 list-decimal">
+                                    {word.senses.slice(0, 4).map((sense, sIdx) => (
+                                      <li key={sIdx}>{sense.glosses.join('; ')}</li>
+                                    ))}
+                                  </ol>
+                                </details>
+                              </>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-[11px] text-muted-foreground">
+                                  暂无中文释义，以下为英文词典参考：
+                                </p>
+                                <ol className="space-y-1.5">
+                                  {word.senses.slice(0, 4).map((sense, sIdx) => (
+                                    <li key={sIdx} className="space-y-0.5">
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-xs font-semibold text-primary">
+                                          {sIdx + 1}.
+                                        </span>
+                                        {sense.misc && (
+                                          <Badge variant="outline" className="text-[10px] py-0">
+                                            {sense.misc}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <p className="text-foreground/90 pl-4">
+                                        {sense.glosses.join('; ')}
+                                      </p>
+                                    </li>
+                                  ))}
+                                </ol>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </Card>
                   )
                 })}
@@ -505,9 +639,7 @@ export function DictionaryPage() {
           {!isSearchingOnline && onlineResult.sentences.length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-base font-bold">
-                  真实语料例句（Tatoeba）
-                </h2>
+                <h2 className="font-display text-base font-bold">常见例句</h2>
                 <Badge variant="outline">{onlineResult.sentences.length} 句</Badge>
               </div>
               <div className="grid gap-2.5 sm:grid-cols-2">

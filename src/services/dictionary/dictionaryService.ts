@@ -1,4 +1,8 @@
 import type { RubySegment } from '@/types/learning'
+import {
+  fetchWiktionaryZh,
+  type WiktionaryZhExample,
+} from '@/services/dictionary/wiktionaryZhService'
 
 export interface DictionarySense {
   glosses: string[]
@@ -11,14 +15,23 @@ export interface DictionaryPitchPart {
   high: boolean
 }
 
+export type JmdictVerbClass = 'godan' | 'ichidan' | 'suru' | 'kuru'
+
 export interface OnlineDictionaryWord {
   id: string
   kanji: string
   kana: string
   segments: RubySegment[]
   common: boolean
+  /** 优先展示的中文释义（来自中文维基词典 CC BY-SA 4.0） */
+  zhDefinitions: string[]
+  zhExamples: WiktionaryZhExample[]
+  zhSourceUrl?: string
+  zhLicense?: 'CC BY-SA 4.0'
+  /** EDRDG JMdict 结构化义项与词性 */
   senses: DictionarySense[]
   pitch?: DictionaryPitchPart[]
+  verbClass?: JmdictVerbClass
   sourceName: 'EDRDG JMdict'
   sourceUrl: string
   license: 'CC BY-SA 4.0'
@@ -126,6 +139,28 @@ export function formatJmdictPos(posList: unknown[] | undefined): string[] {
   return Array.from(new Set(labels))
 }
 
+export function extractJmdictVerbClass(
+  senses: { pos?: unknown[] }[] | undefined,
+): JmdictVerbClass | undefined {
+  if (!Array.isArray(senses)) return undefined
+  for (const s of senses) {
+    if (!Array.isArray(s.pos)) continue
+    for (const p of s.pos) {
+      if (p && typeof p === 'object') {
+        const verbVal = (p as Record<string, unknown>).Verb
+        if (verbVal) {
+          const serialized = typeof verbVal === 'string' ? verbVal : JSON.stringify(verbVal)
+          if (serialized.includes('Kuru')) return 'kuru'
+          if (serialized.includes('Suru')) return 'suru'
+          if (serialized.includes('Ichidan')) return 'ichidan'
+          if (serialized.includes('Godan')) return 'godan'
+        }
+      }
+    }
+  }
+  return undefined
+}
+
 interface RawJotobaWord {
   reading?: {
     kana?: string
@@ -201,14 +236,33 @@ export async function searchOnlineDictionary(
         kana,
         segments: parseJotobaFurigana(w.reading?.furigana, kanji),
         common: Boolean(w.common),
+        zhDefinitions: [],
+        zhExamples: [],
         senses,
         pitch: Array.isArray(w.pitch) ? w.pitch : undefined,
+        verbClass: extractJmdictVerbClass(w.senses),
         sourceName: 'EDRDG JMdict' as const,
         sourceUrl: `https://jisho.org/word/${encodeURIComponent(kanji)}`,
         license: 'CC BY-SA 4.0' as const,
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
+
+  // Enrich top 6 JMdict entries with authentic Simplified Chinese definitions & examples
+  // from zh.wiktionary.org (CC BY-SA 4.0) in parallel.
+  await Promise.all(
+    words.slice(0, 6).map(async (w) => {
+      const zhEntry =
+        (await fetchWiktionaryZh(w.kanji, signal)) ??
+        (w.kana && w.kana !== w.kanji ? await fetchWiktionaryZh(w.kana, signal) : null)
+      if (zhEntry) {
+        w.zhDefinitions = zhEntry.definitions
+        w.zhExamples = zhEntry.examples
+        w.zhSourceUrl = zhEntry.sourceUrl
+        w.zhLicense = zhEntry.license
+      }
+    }),
+  )
 
   let sentences: OnlineDictionarySentence[] = []
   if (sentenceRes && sentenceRes.ok) {

@@ -342,11 +342,11 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
 
       setState(latestState)
       if (options?.bookmark && options?.addToSrs) {
-        showToast('已收藏并加入今日 SRS 复习队列', 'success')
+        showToast('已收藏并加入今日复习', 'success')
       } else if (options?.bookmark) {
-        showToast('已收藏该词条（同步至生词收藏）', 'success')
+        showToast('已收藏该词条', 'success')
       } else if (options?.addToSrs) {
-        showToast('已加入今日 SRS 闪卡队列', 'success')
+        showToast('已加入闪卡复习', 'success')
       }
       return targetId
     },

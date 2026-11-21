@@ -145,7 +145,7 @@ export function FlashcardsPage() {
         <div className="space-y-1">
           <h1 className="font-display text-2xl font-bold tracking-tight">口语词汇与短句闪卡</h1>
           <p className="text-sm text-muted-foreground">
-            用间隔重复记住最常用的聊天词句，也可以随时录入自己遇到的地道表达。
+            按记忆曲线反复巩固高频词句，也可以随时录入自己遇到的实用表达。
           </p>
         </div>
 
@@ -359,7 +359,7 @@ export function FlashcardsPage() {
                     {currentCard.exampleJa && (
                       <div className="rounded-xl border border-border/80 bg-background p-3.5 space-y-1.5">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-medium text-primary">真实语料例句</span>
+                          <span className="text-[11px] font-medium text-primary">参考例句</span>
                           <SpeechButton
                             id={`fc-ex-${currentCard.id}`}
                             text={currentCard.exampleJa}
@@ -593,7 +593,7 @@ function AddCustomVocabDialog({ onAdd }: AddCustomVocabDialogProps) {
         <DialogHeader>
           <DialogTitle>记录新的口语词句</DialogTitle>
           <DialogDescription>
-            把平时看动漫、聊天时遇到的实用表达记下来，加入间隔重复闪卡队列。
+            把平时遇到的实用日语表达记下来，加入闪卡复习列表。
           </DialogDescription>
         </DialogHeader>
 

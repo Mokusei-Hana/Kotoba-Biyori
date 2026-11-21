@@ -115,7 +115,7 @@ export function MistakesPage({ navigate }: MistakesPageProps) {
             错词本
           </h1>
           <p className="text-sm text-muted-foreground">
-            自动收集 SRS 闪卡中标记为「不认识」和「有点模糊」的词句，支持按程度与主题筛选并集中攻克。
+            自动收集闪卡中标记为「不认识」和「有点模糊」的词句，支持按程度与主题筛选并集中复习。
           </p>
         </div>
 
@@ -479,7 +479,7 @@ export function MistakesPage({ navigate }: MistakesPageProps) {
                       {currentCard.exampleJa && (
                         <div className="rounded-xl border border-border/80 bg-background p-3.5 space-y-1.5">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-[11px] font-medium text-primary">真实语料例句</span>
+                            <span className="text-[11px] font-medium text-primary">参考例句</span>
                             <SpeechButton
                               id={`mistake-ex-${currentCard.id}`}
                               text={currentCard.exampleJa}

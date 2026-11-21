@@ -2,6 +2,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ErrorBanner, LoadingView } from '@/components/common/StateViews'
 import { AuthProvider } from '@/context/AuthContext'
 import { LearningProvider, useLearning } from '@/context/LearningContext'
+import { ConjugationPage } from '@/features/conjugation/ConjugationPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { DialoguesPage } from '@/features/dialogues/DialoguesPage'
 import { DictionaryPage } from '@/features/dictionary/DictionaryPage'
@@ -33,7 +34,9 @@ function AppContent() {
       ) : route === 'grammar' ? (
         <GrammarPage />
       ) : route === 'dictionary' ? (
-        <DictionaryPage />
+        <DictionaryPage initialQuery={param} navigate={navigate} />
+      ) : route === 'conjugation' ? (
+        <ConjugationPage initialVerb={param} navigate={navigate} />
       ) : route === 'mistakes' ? (
         <MistakesPage navigate={navigate} />
       ) : (

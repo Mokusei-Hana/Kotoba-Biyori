@@ -1,12 +1,15 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BookA,
   BookOpenText,
+  ChevronDown,
   Flower2,
   Grid2x2,
   Home,
+  Languages,
   Layers,
+  LayoutGrid,
   MessageCircleHeart,
   Moon,
   Sun,
@@ -25,20 +28,86 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-const PRIMARY_NAV: { id: AppRoute; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'dashboard', label: '今日学习', icon: Home },
-  { id: 'dialogues', label: '场景对话', icon: MessageCircleHeart },
-  { id: 'flashcards', label: '口语闪卡', icon: Layers },
-  { id: 'grammar', label: '实用句型', icon: BookOpenText },
-  { id: 'dictionary', label: '智能词典', icon: BookA },
+const PRIMARY_NAV: {
+  id: AppRoute
+  label: string
+  mobileLabel: string
+  icon: React.ComponentType<{ className?: string }>
+}[] = [
+  { id: 'dashboard', label: '今日学习', mobileLabel: '首页', icon: Home },
+  { id: 'dialogues', label: '场景对话', mobileLabel: '对话', icon: MessageCircleHeart },
+  { id: 'flashcards', label: '口语闪卡', mobileLabel: '闪卡', icon: Layers },
+  { id: 'grammar', label: '实用句型', mobileLabel: '句型', icon: BookOpenText },
+  { id: 'dictionary', label: '智能词典', mobileLabel: '词典', icon: BookA },
+]
+
+const TOOL_ROUTES: {
+  id: AppRoute
+  label: string
+  shortLabel: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+  iconClassName: string
+}[] = [
+  {
+    id: 'mistakes',
+    label: '错词本',
+    shortLabel: '错词本',
+    description: '集中攻克不认识与模糊词',
+    icon: AlertTriangle,
+    iconClassName: 'text-warning',
+  },
+  {
+    id: 'conjugation',
+    label: '动词活用查询',
+    shortLabel: '动词活用',
+    description: '五段 / 一段 / 不规则 13 种活用',
+    icon: Languages,
+    iconClassName: 'text-primary',
+  },
+  {
+    id: 'kana',
+    label: '五十音速查',
+    shortLabel: '五十音',
+    description: '清音・浊音・拗音发音表',
+    icon: Grid2x2,
+    iconClassName: 'text-primary',
+  },
 ]
 
 export function AppShell({ route, navigate, children }: AppShellProps) {
   const { state, weakVocab, updatePreferences, speechError, clearSpeechError, toast } = useLearning()
   const isDark = state.preferences.theme === 'dark'
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const toolsRef = useRef<HTMLDivElement>(null)
+
+  const activeTool = TOOL_ROUTES.find((t) => t.id === route)
+
+  useEffect(() => {
+    if (!toolsOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
+        setToolsOpen(false)
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setToolsOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [toolsOpen])
 
   const toggleTheme = () => {
     void updatePreferences({ theme: isDark ? 'light' : 'dark' })
+  }
+
+  const handleSelectTool = (toolId: AppRoute) => {
+    setToolsOpen(false)
+    navigate(toolId)
   }
 
   return (
@@ -66,7 +135,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
           </button>
 
           {/* Desktop Primary Nav */}
-          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 min-w-0" aria-label="主导航">
+          <nav className="hidden md:flex items-center gap-1 min-w-0" aria-label="主导航">
             {PRIMARY_NAV.map((item) => {
               const Icon = item.icon
               const active = route === item.id
@@ -76,13 +145,13 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
                   type="button"
                   onClick={() => navigate(item.id)}
                   className={cn(
-                    'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 lg:px-3 py-1.5 text-[13px] lg:text-sm font-medium whitespace-nowrap transition-colors cursor-pointer',
+                    'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 lg:px-3.5 py-1.5 text-[13px] lg:text-sm font-medium whitespace-nowrap transition-colors cursor-pointer',
                     active
                       ? 'bg-secondary text-secondary-foreground'
                       : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
                   )}
                 >
-                  <Icon className={cn('hidden lg:block size-3.5 shrink-0', active && 'text-primary')} />
+                  <Icon className={cn('hidden lg:block size-4 shrink-0', active && 'text-primary')} />
                   <span>{item.label}</span>
                 </button>
               )
@@ -91,35 +160,85 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
 
           {/* Right Utility Controls */}
           <div className="flex shrink-0 items-center gap-1">
-            {/* Learning Tools: Mistakes & Kana */}
-            <Button
-              variant={route === 'mistakes' ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={() => navigate('mistakes')}
-              className="relative h-8 px-2 lg:px-2.5 gap-1.5 text-xs whitespace-nowrap shrink-0"
-              aria-label="错词本"
-              title="错词本（集中复习不认识与模糊词）"
-            >
-              <AlertTriangle className="size-3.5 shrink-0 text-warning" />
-              <span className="hidden lg:inline">错词本</span>
-              {weakVocab.length > 0 && (
-                <span className="rounded-full bg-warning/15 px-1.5 py-0 text-[10px] font-semibold leading-4 text-warning">
-                  {weakVocab.length}
-                </span>
-              )}
-            </Button>
+            {/* Consolidated Learning Tools Dropdown */}
+            <div ref={toolsRef} className="relative">
+              <Button
+                type="button"
+                variant={activeTool ? 'secondary' : 'outline'}
+                size="sm"
+                aria-haspopup="menu"
+                aria-expanded={toolsOpen}
+                onClick={() => setToolsOpen((prev) => !prev)}
+                className="h-8 px-2.5 gap-1.5 text-xs whitespace-nowrap shrink-0"
+              >
+                {activeTool ? (
+                  <activeTool.icon className={cn('size-3.5 shrink-0', activeTool.iconClassName)} />
+                ) : (
+                  <LayoutGrid className="size-3.5 shrink-0 text-primary" />
+                )}
+                <span>{activeTool ? activeTool.shortLabel : '工具'}</span>
+                {weakVocab.length > 0 && !activeTool && (
+                  <span className="rounded-full bg-warning/15 px-1.5 text-[10px] font-semibold leading-4 text-warning">
+                    {weakVocab.length}
+                  </span>
+                )}
+                <ChevronDown
+                  className={cn(
+                    'size-3 text-muted-foreground transition-transform duration-150',
+                    toolsOpen && 'rotate-180',
+                  )}
+                />
+              </Button>
 
-            <Button
-              variant={route === 'kana' ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={() => navigate('kana')}
-              className="h-8 px-2 lg:px-2.5 gap-1.5 text-xs whitespace-nowrap shrink-0"
-              aria-label="五十音速查"
-              title="五十音轻量速查表"
-            >
-              <Grid2x2 className="size-3.5 shrink-0 text-primary" />
-              <span className="hidden lg:inline">五十音</span>
-            </Button>
+              {toolsOpen && (
+                <div
+                  role="menu"
+                  aria-label="学习工具菜单"
+                  className="absolute right-0 mt-2 w-60 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg z-50"
+                >
+                  <div className="px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground">
+                    学习工具
+                  </div>
+                  <div className="space-y-0.5">
+                    {TOOL_ROUTES.map((tool) => {
+                      const Icon = tool.icon
+                      const isActive = route === tool.id
+                      return (
+                        <button
+                          key={tool.id}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleSelectTool(tool.id)}
+                          className={cn(
+                            'flex w-full items-center justify-between gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors cursor-pointer',
+                            isActive
+                              ? 'bg-secondary text-secondary-foreground'
+                              : 'hover:bg-muted/80 text-foreground',
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background border border-border/70">
+                              <Icon className={cn('size-3.5', tool.iconClassName)} />
+                            </span>
+                            <div className="min-w-0 leading-tight">
+                              <p className="text-xs font-semibold truncate">{tool.label}</p>
+                              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                {tool.description}
+                              </p>
+                            </div>
+                          </div>
+                          {tool.id === 'mistakes' && weakVocab.length > 0 && (
+                            <span className="shrink-0 rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-semibold text-warning">
+                              {weakVocab.length}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <span className="hidden sm:block mx-0.5 h-4 w-px bg-border/80" aria-hidden="true" />
 
@@ -159,9 +278,9 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
       {/* Mobile Bottom Navigation */}
       <nav
         aria-label="移动端导航"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xs pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        <div className="grid grid-cols-5 h-16 px-1">
+        <div className="grid grid-cols-5 h-15 px-1">
           {PRIMARY_NAV.map((item) => {
             const Icon = item.icon
             const active = route === item.id
@@ -171,19 +290,19 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
                 type="button"
                 onClick={() => navigate(item.id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium whitespace-nowrap transition-colors cursor-pointer',
+                  'flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-7 w-12 items-center justify-center rounded-full transition-colors',
+                    'flex h-7 w-11 items-center justify-center rounded-full transition-colors',
                     active && 'bg-secondary',
                   )}
                 >
                   <Icon className="size-4" />
                 </span>
-                <span>{item.label}</span>
+                <span>{item.mobileLabel}</span>
               </button>
             )
           })}
