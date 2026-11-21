@@ -35,7 +35,7 @@ import { FuriganaText } from '@/components/common/FuriganaText'
 import { SpeechButton } from '@/components/common/SpeechButton'
 import { EmptyState } from '@/components/common/StateViews'
 import { useLearning, type SrsRating } from '@/context/LearningContext'
-import { TOPIC_MAP, TOPICS } from '@/data/topics'
+import { getSubtopicLabel, TOPIC_MAP, TOPICS } from '@/data/topics'
 import type { TopicId } from '@/types/learning'
 import { cn, getTodayKey } from '@/lib/utils'
 
@@ -53,12 +53,28 @@ export function FlashcardsPage() {
 
   const [mode, setMode] = useState<'study' | 'browse'>('study')
   const [filter, setFilter] = useState<FilterKey>('due')
+  const [subtopicFilter, setSubtopicFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [flipped, setFlipped] = useState(false)
   const [cardIndex, setCardIndex] = useState(0)
   const [sessionReviewed, setSessionReviewed] = useState(0)
 
   const today = getTodayKey()
+
+  const activeTopicMeta =
+    filter !== 'due' && filter !== 'all' && filter !== 'bookmarked' ? TOPIC_MAP[filter] : undefined
+  const activeSubtopics = activeTopicMeta?.subtopics
+
+  const subtopicCounts = useMemo(() => {
+    if (!activeTopicMeta || !activeSubtopics?.length) return {} as Record<string, number>
+    const counts: Record<string, number> = {}
+    for (const item of allVocab) {
+      if (item.topic === activeTopicMeta.id && item.subtopic) {
+        counts[item.subtopic] = (counts[item.subtopic] ?? 0) + 1
+      }
+    }
+    return counts
+  }, [allVocab, activeTopicMeta, activeSubtopics])
 
   const filteredItems = useMemo(() => {
     let list = allVocab
@@ -72,6 +88,9 @@ export function FlashcardsPage() {
       list = list.filter((item) => state.bookmarkedVocab.includes(item.id))
     } else if (filter !== 'all') {
       list = list.filter((item) => item.topic === filter)
+      if (subtopicFilter !== 'all') {
+        list = list.filter((item) => item.subtopic === subtopicFilter)
+      }
     }
 
     const q = searchQuery.trim().toLowerCase()
@@ -86,13 +105,18 @@ export function FlashcardsPage() {
     }
 
     return list
-  }, [allVocab, filter, state.srsRecords, state.bookmarkedVocab, today, searchQuery, mode])
+  }, [allVocab, filter, subtopicFilter, state.srsRecords, state.bookmarkedVocab, today, searchQuery, mode])
 
-  // Keep index in bounds when filter changes
+  // Reset subtopic when main filter changes
+  useEffect(() => {
+    setSubtopicFilter('all')
+  }, [filter])
+
+  // Keep index in bounds when filter or subtopic changes
   useEffect(() => {
     setCardIndex(0)
     setFlipped(false)
-  }, [filter])
+  }, [filter, subtopicFilter])
 
   const currentCard = filteredItems[cardIndex] ?? filteredItems[0]
 
@@ -129,32 +153,74 @@ export function FlashcardsPage() {
       </div>
 
       {/* Filter Pills */}
-      <div className="flex flex-wrap gap-2">
-        {(
-          [
-            { key: 'due', label: '今日待复习' },
-            { key: 'all', label: `全部 (${allVocab.length})` },
-            { key: 'bookmarked', label: `生词收藏 (${state.bookmarkedVocab.length})` },
-            ...TOPICS.map((t) => ({ key: t.id, label: t.label })),
-          ] as { key: FilterKey; label: string }[]
-        ).map((pill) => {
-          const active = filter === pill.key
-          return (
+      <div className="space-y-2.5">
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { key: 'due', label: '今日待复习' },
+              { key: 'all', label: `全部 (${allVocab.length})` },
+              { key: 'bookmarked', label: `生词收藏 (${state.bookmarkedVocab.length})` },
+              ...TOPICS.map((t) => ({ key: t.id, label: t.label })),
+            ] as { key: FilterKey; label: string }[]
+          ).map((pill) => {
+            const active = filter === pill.key
+            return (
+              <button
+                key={pill.key}
+                type="button"
+                onClick={() => setFilter(pill.key)}
+                className={cn(
+                  'rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
+                  active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-secondary hover:text-secondary-foreground',
+                )}
+              >
+                {pill.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Subtopic Filter Pills (when active topic has subtopics) */}
+        {activeTopicMeta && activeSubtopics && activeSubtopics.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pl-1 border-l-2 border-primary/30">
+            <span className="text-[11px] font-medium text-muted-foreground px-1.5">
+              {activeTopicMeta.label}子主题：
+            </span>
             <button
-              key={pill.key}
               type="button"
-              onClick={() => setFilter(pill.key)}
+              onClick={() => setSubtopicFilter('all')}
               className={cn(
-                'rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
-                active
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-secondary hover:text-secondary-foreground',
+                'rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+                subtopicFilter === 'all'
+                  ? 'bg-secondary text-secondary-foreground ring-1 ring-primary/40'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-secondary/70 hover:text-secondary-foreground',
               )}
             >
-              {pill.label}
+              全部 ({Object.values(subtopicCounts).reduce((a, b) => a + b, 0)})
             </button>
-          )
-        })}
+            {activeSubtopics.map((sub) => {
+              const active = subtopicFilter === sub.id
+              const count = subtopicCounts[sub.id] ?? 0
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => setSubtopicFilter(sub.id)}
+                  className={cn(
+                    'rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+                    active
+                      ? 'bg-secondary text-secondary-foreground ring-1 ring-primary/40'
+                      : 'bg-muted/60 text-muted-foreground hover:bg-secondary/70 hover:text-secondary-foreground',
+                  )}
+                >
+                  {sub.label} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Mode Tabs */}
@@ -219,13 +285,22 @@ export function FlashcardsPage() {
                     setFlipped((f) => !f)
                   }
                 }}
-                className="group relative min-h-[290px] w-full cursor-pointer rounded-2xl border border-border bg-card p-6 sm:p-8 flex flex-col justify-between transition-all hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="group relative min-h-[290px] w-full cursor-pointer rounded-2xl border border-border bg-card p-6 sm:p-8 flex flex-col justify-between transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 {/* Top row: badges + audio + bookmark */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant="secondary">{TOPIC_MAP[currentCard.topic]?.label}</Badge>
-                    <Badge variant="outline">{currentCard.register}</Badge>
+                    {getSubtopicLabel(currentCard.topic, currentCard.subtopic) && (
+                      <Badge variant="muted">
+                        {getSubtopicLabel(currentCard.topic, currentCard.subtopic)}
+                      </Badge>
+                    )}
+                    {currentCard.usageScope ? (
+                      <Badge variant="outline">{currentCard.usageScope}</Badge>
+                    ) : (
+                      <Badge variant="outline">{currentCard.register}</Badge>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -281,17 +356,21 @@ export function FlashcardsPage() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-border/80 bg-background p-3.5 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-medium text-primary">对话例句</span>
-                        <SpeechButton
-                          id={`fc-ex-${currentCard.id}`}
-                          text={currentCard.exampleJa}
-                        />
+                    {currentCard.exampleJa && (
+                      <div className="rounded-xl border border-border/80 bg-background p-3.5 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-medium text-primary">真实语料例句</span>
+                          <SpeechButton
+                            id={`fc-ex-${currentCard.id}`}
+                            text={currentCard.exampleJa}
+                          />
+                        </div>
+                        <p className="text-sm font-medium text-foreground">{currentCard.exampleJa}</p>
+                        {currentCard.exampleZh && (
+                          <p className="text-xs text-muted-foreground">{currentCard.exampleZh}</p>
+                        )}
                       </div>
-                      <p className="text-sm font-medium text-foreground">{currentCard.exampleJa}</p>
-                      <p className="text-xs text-muted-foreground">{currentCard.exampleZh}</p>
-                    </div>
+                    )}
 
                     {currentCard.tip && (
                       <p className="text-xs text-muted-foreground text-center">
@@ -377,16 +456,27 @@ export function FlashcardsPage() {
                 const isBookmarked = state.bookmarkedVocab.includes(item.id)
                 const rec = state.srsRecords[item.id]
                 return (
-                  <Card key={item.id} className="p-4 flex flex-col justify-between gap-3">
+                  <Card key={item.id} className="p-4 flex flex-col justify-between gap-3 scroll-card-item">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <Badge variant="secondary" className="text-[11px]">
                             {TOPIC_MAP[item.topic]?.label}
                           </Badge>
-                          <Badge variant="outline" className="text-[11px]">
-                            {item.register}
-                          </Badge>
+                          {getSubtopicLabel(item.topic, item.subtopic) && (
+                            <Badge variant="muted" className="text-[11px]">
+                              {getSubtopicLabel(item.topic, item.subtopic)}
+                            </Badge>
+                          )}
+                          {item.usageScope ? (
+                            <Badge variant="outline" className="text-[11px]">
+                              {item.usageScope}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[11px]">
+                              {item.register}
+                            </Badge>
+                          )}
                           {rec && rec.lastRating === 'good' && (
                             <Badge variant="success" className="text-[11px]">
                               已熟悉
@@ -431,10 +521,14 @@ export function FlashcardsPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg bg-background border border-border/70 px-3 py-2 text-xs space-y-0.5">
-                      <p className="text-foreground/90">{item.exampleJa}</p>
-                      <p className="text-muted-foreground">{item.exampleZh}</p>
-                    </div>
+                    {item.exampleJa && (
+                      <div className="rounded-lg bg-background border border-border/70 px-3 py-2 text-xs space-y-0.5">
+                        <p className="text-foreground/90">{item.exampleJa}</p>
+                        {item.exampleZh && (
+                          <p className="text-muted-foreground">{item.exampleZh}</p>
+                        )}
+                      </div>
+                    )}
                   </Card>
                 )
               })}

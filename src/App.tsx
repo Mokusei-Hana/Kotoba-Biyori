@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/layout/AppShell'
 import { ErrorBanner, LoadingView } from '@/components/common/StateViews'
+import { AuthProvider } from '@/context/AuthContext'
 import { LearningProvider, useLearning } from '@/context/LearningContext'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { DialoguesPage } from '@/features/dialogues/DialoguesPage'
@@ -38,8 +39,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LearningProvider>
-      <AppContent />
-    </LearningProvider>
+    <AuthProvider>
+      <LearningProvider>
+        <AppContent />
+      </LearningProvider>
+    </AuthProvider>
   )
 }

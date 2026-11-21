@@ -3,8 +3,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Noto Sans JP", "Hiragino Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --font-display: "Zen Maru Gothic", "Noto Sans JP", "PingFang SC", system-ui, sans-serif;
+  --font-sans: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Zen Maru Gothic", "Noto Sans JP", "Hiragino Maru Gothic ProN", "PingFang SC", system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -118,15 +118,16 @@
     @apply border-border outline-ring/50;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "palt" 1;
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Lightweight rendering optimization for scrollable card lists */
+.scroll-card-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 160px;
 }
 
 /* Furigana (ruby) refined Japanese typography */

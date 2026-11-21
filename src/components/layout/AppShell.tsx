@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ErrorBanner } from '@/components/common/StateViews'
+import { AccountDialog } from '@/components/layout/AccountDialog'
 import { SettingsDialog } from '@/components/layout/SettingsDialog'
 import { useLearning } from '@/context/LearningContext'
 import type { AppRoute } from '@/hooks/useHashRoute'
@@ -40,7 +41,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Desktop & Mobile Top Header */}
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-background">
         <div className="mx-auto flex h-15 max-w-5xl items-center justify-between px-4 sm:px-6">
           {/* Brand */}
           <button
@@ -109,6 +110,8 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
               {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
 
+            <AccountDialog />
+
             <SettingsDialog />
           </div>
         </div>
@@ -132,7 +135,7 @@ export function AppShell({ route, navigate, children }: AppShellProps) {
       {/* Mobile Bottom Navigation */}
       <nav
         aria-label="移动端导航"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background md:hidden"
       >
         <div className="grid grid-cols-4 h-16 px-2">
           {PRIMARY_NAV.map((item) => {

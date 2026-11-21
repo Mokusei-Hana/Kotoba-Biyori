@@ -5,13 +5,21 @@ export type TopicId =
   | 'dining'
   | 'konbini'
   | 'hangout'
+  | 'chika-idol'
   | 'custom'
+
+export interface SubtopicMeta {
+  id: string
+  label: string
+  jpLabel?: string
+}
 
 export interface TopicMeta {
   id: TopicId
   label: string
   jpLabel: string
   description: string
+  subtopics?: SubtopicMeta[]
 }
 
 /** A token for rendering optional furigana via <ruby> */
@@ -19,6 +27,15 @@ export interface RubySegment {
   text: string
   reading?: string
 }
+
+export type DialogueVerificationStatus =
+  | '真实原句'
+  | '现场实证'
+  | '真实原句+现场实证'
+  | '真实原句+情景衔接'
+  | '现场实证+情景衔接'
+  | '真实原句改编'
+  | '情景衔接'
 
 export interface DialogueLine {
   id: string
@@ -29,6 +46,10 @@ export interface DialogueLine {
   romaji: string
   zh: string
   note?: string
+  /** 仅用于代码层语料溯源，不在界面展示 */
+  source?: string
+  /** 仅用于代码层核验状态记录，不在界面展示 */
+  verificationStatus?: DialogueVerificationStatus
 }
 
 export interface DialogueScenario {
@@ -53,14 +74,19 @@ export interface DialogueScenario {
 export interface VocabItem {
   id: string
   topic: TopicId
+  subtopic?: string
   segments: RubySegment[]
   plainJa: string
   reading: string
   romaji: string
   zh: string
   register: '礼貌' | '简体' | '通用'
-  exampleJa: string
-  exampleZh: string
+  usageScope?: '圈内特有' | '现场特化' | '演出通用'
+  exampleJa?: string
+  exampleZh?: string
+  exampleSourceUrl?: string
+  sourceUrl?: string
+  license?: string
   tip?: string
   isCustom?: boolean
 }

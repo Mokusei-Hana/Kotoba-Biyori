@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress'
 import { FuriganaText } from '@/components/common/FuriganaText'
 import { SpeechButton } from '@/components/common/SpeechButton'
 import { EmptyState } from '@/components/common/StateViews'
+import { LearningStatsSection } from '@/features/dashboard/LearningStatsSection'
 import { useLearning } from '@/context/LearningContext'
 import { DIALOGUE_SCENARIOS } from '@/data/dialogues'
 import { GRAMMAR_PATTERNS } from '@/data/grammar'
@@ -213,6 +214,9 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
           </Card>
         </div>
       </section>
+
+      {/* Learning Statistics & Review Calendar */}
+      <LearningStatsSection navigate={navigate} />
 
       {/* Weak Items Quick Review */}
       <section className="space-y-3">

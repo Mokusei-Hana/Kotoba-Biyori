@@ -1,6 +1,7 @@
 import type { DialogueScenario } from '@/types/learning'
+import { CHIKA_IDOL_DIALOGUES } from '@/data/chikaIdolDialogues'
 
-export const DIALOGUE_SCENARIOS: DialogueScenario[] = [
+const BASE_DIALOGUE_SCENARIOS: DialogueScenario[] = [
   {
     id: 'dlg-intro-1',
     topic: 'intro',
@@ -663,4 +664,9 @@ export const DIALOGUE_SCENARIOS: DialogueScenario[] = [
     ],
     culturalTip: '和日本朋友道别时很少说「さようなら」（听起来像永别），平时说「じゃあ、またね！」或「また今度（下次见）！」最自然。',
   },
+]
+
+export const DIALOGUE_SCENARIOS: DialogueScenario[] = [
+  ...BASE_DIALOGUE_SCENARIOS,
+  ...CHIKA_IDOL_DIALOGUES,
 ]

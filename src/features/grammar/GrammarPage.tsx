@@ -135,7 +135,7 @@ export function GrammarPage() {
           {filtered.map((item) => {
             const mastered = state.masteredGrammar.includes(item.id)
             return (
-              <Card key={item.id} className="overflow-hidden">
+              <Card key={item.id} className="overflow-hidden scroll-card-item">
                 <CardHeader className="pb-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">

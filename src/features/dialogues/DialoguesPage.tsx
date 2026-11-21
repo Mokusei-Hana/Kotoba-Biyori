@@ -38,6 +38,7 @@ const DIALOGUE_TOPICS: ('all' | Exclude<TopicId, 'custom'>)[] = [
   'dining',
   'konbini',
   'hangout',
+  'chika-idol',
 ]
 
 export function DialoguesPage({ selectedId, onSelectScenario }: DialoguesPageProps) {
@@ -78,7 +79,7 @@ export function DialoguesPage({ selectedId, onSelectScenario }: DialoguesPagePro
       <div className="space-y-1.5">
         <h1 className="font-display text-2xl font-bold tracking-tight">场景对话演练</h1>
         <p className="text-sm text-muted-foreground">
-          精选 6 个和日本人日常聊天的高频场景，支持振假名开关、语速调节与角色掩盖跟读。
+          精选 {DIALOGUE_SCENARIOS.length} 个实用日语交流场景，支持振假名开关、语速调节与角色掩盖跟读。
         </p>
       </div>
 
@@ -112,7 +113,7 @@ export function DialoguesPage({ selectedId, onSelectScenario }: DialoguesPagePro
             <Card
               key={scenario.id}
               onClick={() => onSelectScenario(scenario.id)}
-              className="group cursor-pointer transition-all hover:border-primary/45 hover:bg-card"
+              className="group cursor-pointer transition-colors hover:border-primary/45 hover:bg-card"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
@@ -343,7 +344,7 @@ function DialogueStudio({
             >
               <div
                 className={cn(
-                  'w-full max-w-xl rounded-2xl border p-4 transition-all',
+                  'w-full max-w-xl rounded-2xl border p-4 transition-colors',
                   isUserRole
                     ? 'border-primary/25 bg-secondary/45'
                     : 'border-border bg-card',

@@ -1,6 +1,7 @@
 import type { VocabItem } from '@/types/learning'
+import { CHIKA_IDOL_VOCAB } from '@/data/chikaIdolVocab'
 
-export const BUILTIN_VOCAB: VocabItem[] = [
+const BASE_BUILTIN_VOCAB: VocabItem[] = [
   // intro
   {
     id: 'v-intro-1',
@@ -448,3 +449,5 @@ export const BUILTIN_VOCAB: VocabItem[] = [
     exampleZh: '今天谢谢你！下次见啦！',
   },
 ]
+
+export const BUILTIN_VOCAB: VocabItem[] = [...BASE_BUILTIN_VOCAB, ...CHIKA_IDOL_VOCAB]

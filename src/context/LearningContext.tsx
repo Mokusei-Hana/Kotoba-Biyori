@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@/context/AuthContext'
 import { BUILTIN_VOCAB } from '@/data/vocabulary'
+import { preloadAppFonts, preloadFontChars } from '@/lib/fontPreloader'
 import { addDaysToKey, getTodayKey } from '@/lib/utils'
 import { createDefaultLearningState, learningRepository } from '@/services/repository'
 import { speechService } from '@/services/speech'
@@ -110,6 +112,7 @@ function computeNextSrs(prev: SrsRecord | undefined, itemId: string, rating: Srs
 }
 
 export function LearningProvider({ children }: { children: React.ReactNode }) {
+  const { user, isAuthLoading } = useAuth()
   const [state, setState] = useState<LearningState>(() => createDefaultLearningState())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -131,6 +134,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     try {
       const loaded = await learningRepository.loadState()
       setState(loaded)
+      await preloadAppFonts(loaded.customVocab)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载学习数据时发生错误。')
     } finally {
@@ -139,8 +143,9 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (isAuthLoading) return
     void reload()
-  }, [reload])
+  }, [reload, isAuthLoading, user?.id])
 
   // Sync theme class on <html>
   useEffect(() => {
@@ -246,12 +251,15 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         romaji: input.romaji.trim(),
         zh: input.zh.trim(),
         register: input.register,
-        exampleJa: input.exampleJa.trim() || input.plainJa.trim(),
-        exampleZh: input.exampleZh.trim() || input.zh.trim(),
+        exampleJa: input.exampleJa.trim() || undefined,
+        exampleZh: input.exampleZh.trim() || undefined,
         isCustom: true,
       }
       const next = await learningRepository.addCustomVocab(item)
       setState(next)
+      void preloadFontChars(
+        `${item.plainJa}${item.reading}${item.zh}${item.exampleJa ?? ''}${item.exampleZh ?? ''}`,
+      )
       showToast('已添加到自定义词句', 'success')
     },
     [showToast],
@@ -274,6 +282,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     async (rawJson: string) => {
       const next = await learningRepository.importBackupJson(rawJson)
       setState(next)
+      void preloadAppFonts(next.customVocab)
       showToast('学习记录已成功导入恢复', 'success')
     },
     [showToast],
